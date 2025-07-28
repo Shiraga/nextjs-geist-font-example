@@ -1,0 +1,21 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Customers: only the authenticated user can access their document
+    match /customers/{customerId} {
+      allow read, write: if request.auth != null && request.auth.uid == customerId;
+    }
+
+    // Orders: only allow read/write if the user is the owner of the order
+    match /orders/{orderId} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.customerId;
+    }
+
+    // Payments: customers can only read their own payment records
+    // Write operations require additional validation (handled by admin/server)
+    match /payments/{paymentId} {
+      allow read: if request.auth != null && request.auth.uid == resource.data.customerId;
+      allow write: if false; // Payments should be handled server-side for security
+    }
+  }
+}
